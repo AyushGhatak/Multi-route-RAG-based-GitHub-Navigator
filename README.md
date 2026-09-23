@@ -107,10 +107,10 @@ Parse and Classify Files into Tiers
        └── Tier 3 → Binary Metadata
        │
        ▼
-Normalize / Format Parsed Content
+Generate Intermediate JSON
        │
        ▼
-Generate Intermediate JSON
+Normalize / Format Parsed Content
        │
        ▼
 Create Graph Entities (Nodes & Relationships)
