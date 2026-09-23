@@ -1931,8 +1931,8 @@ Multi-route-GitHub-Navigator/
 │
 ├── Offline Indexing/
 │   ├── codeparser.py
-│   ├── cloning_git_repo_locally_and_repo_file_parser
-│   ├── code_and_git_ingestion_to_neo4j
+│   ├── cloning_git_repo_locally_and_repo_file_parser.py
+│   ├── code_and_git_ingestion_to_neo4j.py
 |   ├── README.md
 ├── Online Query Processing/
 │   ├── stage0.py
