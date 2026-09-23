@@ -2114,3 +2114,22 @@ Validation
 
 
 That distinction is the foundation of the project.
+
+---
+
+# Disclaimer
+
+This project is intended for **educational, research, and experimental purposes**.
+
+The system uses automated code parsing, graph-based retrieval, vector search, reranking, Git history analysis, and large language models to generate answers about software repositories. Generated responses may contain incomplete, inaccurate, or outdated interpretations of the underlying code or repository history.
+
+The outputs should therefore be treated as **assistance for codebase exploration and research**, rather than as authoritative documentation or a substitute for manually inspecting the source code, Git history, or official project documentation.
+
+---
+
+# Author
+
+### Ayush Ghatak
+
+• Generative AI • Large Language Models (LLMs) • Machine Learning • Deep Learning • Natural Language Processing (NLP) • Code Intelligence • Retrieval-Augmented Generation (RAG) • Graph-Based Retrieval • Vector Search • Semantic Search • Cross-Encoder Reranking • Knowledge Graphs • Neo4j • Tree-sitter • Python • Git Analysis • Repository Intelligence • Prompt Engineering • Ollama • Qwen • Sentence Transformers • Embeddings • Information Retrieval
+
