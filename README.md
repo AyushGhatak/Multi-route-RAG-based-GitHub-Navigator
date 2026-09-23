@@ -351,7 +351,7 @@ The tiers provide a controlled fallback strategy.
 
 ---
 
-# Tier 1 — AST Parsing
+## Tier 1 — AST Parsing
 
 Tier 1 contains files for which a dedicated parser pathway exists.
 
@@ -559,17 +559,7 @@ A typical entity contains information conceptually similar to:
 }
 ```
 
-This intermediate representation creates a clean boundary between:
-
-```text
-Parsing
-```
-
-and:
-
-```text
-Database ingestion
-```
+This intermediate representation creates a clean boundary between **parsing** and **database ingestion**.
 
 ---
 
@@ -892,7 +882,7 @@ Each stage has a clearly defined responsibility.
 
 ---
 
-# Stage 0 — Domain Guardrail + Intent Router
+## Stage 0 — Domain Guardrail + Intent Router
 
 The first step determines whether the query is relevant to the repository.
 
@@ -923,17 +913,9 @@ ALLOW
 
 The guardrail is intentionally **recall-oriented**.
 
-It is not responsible for deciding which retrieval route should answer the question.
+It is not responsible for deciding which retrieval route should answer the question. For ambiguous queries that could reasonably refer to the repository, the system allows them to proceed. This prevents the domain guardrail from becoming an unnecessarily strict bottleneck.
 
-For ambiguous queries that could reasonably refer to the repository, the system allows them to proceed.
-
-This prevents the domain guardrail from becoming an unnecessarily strict bottleneck.
-
----
-
-# Stage 0 — Intent Router
-
-After the domain guardrail allows the query, the system performs semantic intent classification.
+After the domain guardrail allows the query, the system performs **semantic intent classification**.
 
 The router uses:
 
@@ -969,9 +951,7 @@ Query Embedding
                     Selected route
 ```
 
-The router does not treat cosine similarity as a probability.
-
-Instead, it uses the relative semantic similarity between the query and the route examples.
+The router does not treat cosine similarity as a probability. Instead, it uses the relative semantic similarity between the query and the route examples.
 
 The resulting metadata includes:
 
@@ -983,7 +963,25 @@ intent_scores
 
 ---
 
-# HYBRID Route
+## Stage 1 — Multi-route Retrieval 
+
+Stage 1 executes the route selected by Stage 0.
+
+```text
+Stage 0 Route
+     │
+     ├── HYBRID → hybrid_search_route()
+     │
+     ├── GRAPH  → graph_dependency_route()
+     │
+     └── GIT    → git_route()
+```
+
+The output of Stage 1 is **raw retrieval context**. Stage 1 does not attempt to generate the final answer.
+
+---
+
+### HYBRID Route
 
 The HYBRID route is used for semantic and implementation-understanding questions.
 
@@ -991,33 +989,25 @@ Typical questions include:
 
 ```text
 How does this function work?
-
 Explain the implementation of this component.
-
 What happens when this operation executes?
-
 Why does this code behave this way?
-
 Explain the workflow of this functionality.
 ```
 
 The route combines:
 
 ```text
-Vector retrieval
-+
-Full-text retrieval
+Vector retrieval + Full-text retrieval
 ```
 
 against the repository knowledge graph.
 
 ---
 
-# HYBRID Retrieval
+#### HYBRID Retrieval
 
-The query is converted into an embedding.
-
-At the same time, the textual query is sanitized for full-text retrieval.
+The query is converted into an embedding. At the same time, the textual query is sanitized for full-text retrieval.
 
 Neo4j is then queried through Cypher for:
 
@@ -1029,9 +1019,7 @@ The results are merged and scored.
 The current route effectively uses:
 
 ```text
-Semantic relevance
-+
-Lexical relevance
+Semantic relevance + Lexical relevance
 ```
 
 rather than depending on either signal alone.
@@ -1046,7 +1034,7 @@ This is especially useful when a query contains:
 
 ---
 
-# GRAPH Route
+### GRAPH Route
 
 The GRAPH route is responsible for structural repository questions.
 
@@ -1054,17 +1042,11 @@ Typical examples:
 
 ```text
 What class contains dispatch_request?
-
 Which class owns this method?
-
 Where is this function defined?
-
 What methods are defined in this class?
-
 What is the parent class?
-
 Which classes inherit from this class?
-
 What are the child classes?
 ```
 
@@ -1072,13 +1054,9 @@ These questions are answered using the graph structure created during ingestion.
 
 ---
 
-# GRAPH Retrieval Strategy
+#### GRAPH Retrieval Strategy
 
-The graph route uses a structured lookup strategy.
-
-It first attempts exact AST-node resolution.
-
-The system can identify a node using:
+The graph route uses a structured lookup strategy. It first attempts exact AST-node resolution. The system can identify a node using:
 
 ```text
 node.name
@@ -1100,13 +1078,11 @@ Documentation
 Location
 ```
 
-The resulting context is therefore not merely the matched node.
-
-It contains the surrounding structural information necessary to answer the question.
+The resulting context is therefore not merely the matched node. It contains the surrounding structural information necessary to answer the question.
 
 ---
 
-# GRAPH Parent Resolution
+#### GRAPH Parent Resolution
 
 For a target such as:
 
@@ -1145,7 +1121,7 @@ This allows the Stage 2 reranker to construct a structurally meaningful answer c
 
 ---
 
-# GRAPH Fallback Strategy
+#### GRAPH Fallback Strategy
 
 The graph route contains multiple retrieval levels.
 
@@ -1168,7 +1144,7 @@ This prevents an exact-symbol miss from immediately producing an empty retrieval
 
 ---
 
-# GIT Route
+### GIT Route
 
 The GIT route is responsible for repository history and provenance.
 
@@ -1176,29 +1152,24 @@ Typical questions include:
 
 ```text
 Who modified this code?
-
 Who authored this file?
-
 When was this functionality introduced?
-
 Show the history of this function.
-
 What commits changed this functionality?
-
 Show the diff for this commit.
-
 Who last modified these lines?
-
-What changed in this file?
 ```
 
 The Git route works against the locally cloned repository.
 
 ---
 
-# GIT Query Metadata Extraction
+#### GIT Query Metadata Extraction
 
-Before executing Git operations, the query is analyzed to extract relevant metadata.
+Before executing Git operations, the query is analyzed to extract relevant metadata using
+```text
+qwen2.5-coder:1.5b
+```
 
 Potential metadata includes:
 
@@ -1226,7 +1197,7 @@ file + line range
 while:
 
 ```text
-Show the history of Complete_Knowledge_Distillation.py.
+Show the history of file1.py.
 ```
 
 requires:
@@ -1249,7 +1220,7 @@ commit hash
 
 ---
 
-# GIT Target Resolution
+#### GIT Target Resolution
 
 The Git route can resolve repository symbols and paths through the graph when necessary.
 
@@ -1275,11 +1246,11 @@ This allows the Git route to work with both explicit and repository-derived targ
 
 ---
 
-# GIT History Retrieval
+#### GIT History Retrieval
 
 The Git route supports multiple forms of historical retrieval.
 
-### File history
+1. File history
 
 ```text
 git log
@@ -1287,19 +1258,19 @@ git log
 
 can retrieve the history of a specific file.
 
-### Symbol history
+2. Symbol history
 
 A symbol can first be resolved to its containing file and source location, after which relevant Git history can be retrieved.
 
-### Line history
+3. Line history
 
 Line ranges can be associated with blame/history operations.
 
-### Blame
+4. Blame
 
 The system can retrieve authorship information for relevant source lines.
 
-### Commit information
+5. Commit information
 
 A commit can be resolved to:
 
@@ -1310,7 +1281,7 @@ date
 message
 ```
 
-### Commit diff
+6. Commit diff
 
 Commit patches can be retrieved using Git operations such as:
 
@@ -1322,29 +1293,7 @@ This provides both metadata and actual code changes.
 
 ---
 
-# Stage 1 — Multi-route Retrieval
-
-Stage 1 executes the route selected by Stage 0.
-
-```text
-Stage 0 Route
-     │
-     ├── HYBRID → hybrid_search_route
-     │
-     ├── GRAPH  → graph_dependency_route
-     │
-     └── GIT    → git_route
-```
-
-The output of Stage 1 is **raw retrieval context**.
-
-Stage 1 does not attempt to generate the final answer.
-
-That separation is deliberate.
-
----
-
-# Stage 1 Output
+### Stage 1 Output
 
 HYBRID and GRAPH retrieval generally produce:
 
@@ -1358,17 +1307,13 @@ GIT retrieval produces:
 GIT context
 ```
 
-The route metadata is preserved throughout the pipeline.
-
-This allows later stages to know not only what was retrieved, but also why it was retrieved.
+The route metadata is preserved throughout the pipeline. This allows later stages to know not only what was retrieved, but also why it was retrieved.
 
 ---
 
-# Stage 2 — Reranking and Contextual Compression
+## Stage 2 — Reranking and Contextual Compression
 
-Stage 1 intentionally retrieves more information than is ultimately needed.
-
-Stage 2 converts the raw retrieval set into a compact, high-value context.
+Stage 1 intentionally retrieves more information than is ultimately needed. Stage 2 converts the raw retrieval set into a compact, high-value context.
 
 The Stage 2 pipeline includes:
 
@@ -1398,31 +1343,25 @@ This prevents the final LLM from receiving large amounts of redundant repository
 
 ---
 
-# Reranking
+### Reranking
 
-Initial retrieval ranking is not always sufficient.
-
-A result can have high semantic similarity while being structurally less useful.
-
-Stage 2 therefore performs additional relevance processing.
-
+Initial retrieval ranking is not always sufficient. A result can have high semantic similarity while being structurally less useful. Stage 2 therefore performs additional relevance processing using 
+```text
+BAAI/bge-reranker-v2-m3
+```
 The project uses reranking to improve the ordering of retrieved candidates before final context construction.
 
 The purpose is:
 
 ```text
-Retrieval relevance
-        +
-Context usefulness
-        +
-Query-specific relevance
+Retrieval relevance + Context usefulness + Query-specific relevance
 ```
 
 rather than simply taking the top raw search results.
 
 ---
 
-# Deduplication
+### Deduplication
 
 Different retrieval mechanisms can return overlapping information.
 
@@ -1438,17 +1377,13 @@ Full Text
       └── Function A
 ```
 
-Without deduplication, the same implementation could occupy multiple context slots.
-
-Stage 2 removes redundant candidates before compression.
+Without deduplication, the same implementation could occupy multiple context slots. Stage 2 removes redundant candidates before compression.
 
 ---
 
-# Dynamic Pruning
+### Dynamic Pruning
 
-Not every retrieved result deserves to reach the final prompt.
-
-Stage 2 dynamically prunes low-value context based on relevance and available token budget.
+Not every retrieved result deserves to reach the final prompt. Stage 2 dynamically prunes low-value context based on relevance and available token budget.
 
 This prevents:
 
@@ -1469,12 +1404,12 @@ reranking
         ↓
 pruning
         ↓
-small high-value context
+small high-value context for the prompt
 ```
 
 ---
 
-# Code Context
+### Code Context
 
 HYBRID and GRAPH results are transformed into a common `CODE` context representation.
 
@@ -1497,7 +1432,7 @@ The final code context is then formatted for Stage 3.
 
 ---
 
-# Git Context
+### Git Context
 
 Git context is intentionally different from code context.
 
@@ -1533,7 +1468,7 @@ This is important because:
 
 ---
 
-# Git Context Token Budgets
+### Git Context Token Budgets
 
 The Git compression stage maintains separate budgets for different Git information categories.
 
@@ -1549,20 +1484,26 @@ This prevents a large patch from consuming the entire context budget and leaving
 
 ---
 
-# Stage 3 — Grounded Generation
+### Membership Checking
+
+Stage 2 also performs **membership checking** using 
+```text 
+qwen2.5-coder:1.5b
+```
+to verify that retrieved results actually belong to the repository scope requested by the user.
+
+This is especially important for queries involving specific files, folders, symbols, or repository entities. Retrieved candidates are checked against the query's explicit membership requirements before they are included in the final context.
+
+---
+
+## Stage 3 — Grounded Generation
 
 Stage 3 is the final generation stage.
 
 It receives:
 
 ```text
-User Query
-+
-Compressed Retrieved Context
-+
-Route Metadata
-+
-Context Type
+User Query + Compressed Retrieved Context + Route Metadata + Context Type
 ```
 
 and constructs the appropriate prompt.
@@ -1577,7 +1518,7 @@ with Ollama running locally.
 
 ---
 
-# Route-Specific Prompt Construction
+### Route-Specific Prompt Construction
 
 Stage 3 does not use exactly the same prompt for every route.
 
@@ -1621,11 +1562,11 @@ repository history
 
 ---
 
-# Final Context Formatting
+### Final Context Formatting
 
 Formatting occurs at two important points in the architecture.
 
-## Formatting During Ingestion
+* Formatting During Ingestion
 
 The raw repository is converted into normalized entities:
 
@@ -1641,7 +1582,7 @@ Neo4j
 
 This provides consistent storage.
 
-## Formatting Before Generation
+* Formatting Before Generation
 
 Retrieved results are then converted into a final LLM-readable context:
 
@@ -1665,11 +1606,9 @@ The system therefore deliberately does **not** treat stored content and prompt c
 
 ---
 
-# Citation Validation
+### Citation Validation
 
-The final answer is not accepted solely because the LLM generated text.
-
-The system validates the answer against the retrieved evidence.
+The final answer is not accepted solely because the LLM generated text. The system validates the answer against the retrieved evidence.
 
 Source information can include:
 
@@ -1686,7 +1625,7 @@ The system validates citations and ensures that generated references correspond 
 
 ---
 
-# Grounding Validation
+### Grounding Validation
 
 After generation, the system evaluates whether the answer is grounded in the retrieved context.
 
@@ -1707,21 +1646,15 @@ Only grounded answers are allowed through.
 
 ---
 
-# Fail-Closed Answer Generation
+### Fail-Closed Answer Generation
 
-A particularly important design choice is that the system **fails closed**.
-
-If sufficient retrieved evidence is not available, Stage 3 does not attempt to guess.
-
-Instead, it returns:
+A particularly important design choice is that the system **fails closed**. If sufficient retrieved evidence is not available, Stage 3 does not attempt to guess. Instead, it returns:
 
 ```text
 Insufficient retrieved context to determine this.
 ```
 
-This prevents the LLM from filling missing repository information with general model knowledge.
-
-The intended behavior is:
+This prevents the LLM from filling missing repository information with general model knowledge. The intended behavior is:
 
 ```text
 No evidence
@@ -1747,7 +1680,7 @@ This is critical for repository-grounded code intelligence.
 
 Consider:
 
-> What class contains `dispatch_request`?
+> What class contains `dispatch_request()`?
 
 The complete pipeline is:
 
@@ -1810,12 +1743,9 @@ Final Answer
 ## Semantic / Implementation
 
 ```text
-How does dispatch_request work?
-
+How does dispatch_request() work?
 Explain how this component processes the input.
-
 Why does this function behave this way?
-
 What happens when this operation is executed?
 ```
 
@@ -1830,12 +1760,9 @@ HYBRID
 ## Structural
 
 ```text
-What class contains dispatch_request?
-
+What class contains dispatch_request()?
 Which class owns this method?
-
 What methods are defined in MethodView?
-
 Which class does this class inherit from?
 ```
 
@@ -1850,16 +1777,11 @@ GRAPH
 ## Git History
 
 ```text
-Who modified dispatch_request?
-
+Who modified dispatch_request()?
 When was this functionality introduced?
-
 What commits changed this file?
-
 Show the history of this function.
-
 Who last modified these lines?
-
 Show the diff for this commit.
 ```
 
@@ -1891,8 +1813,6 @@ Git history
 
 rather than treating the repository as ordinary documents.
 
----
-
 ## 2. Specialized retrieval routes
 
 A single retrieval method cannot optimally answer every repository question.
@@ -1905,13 +1825,9 @@ Structural question → GRAPH
 Historical question → GIT
 ```
 
----
-
 ## 3. AST-aware retrieval
 
-The system does not rely entirely on arbitrary character chunks.
-
-Logical code entities are identified first.
+The system does not rely entirely on arbitrary character chunks. Logical code entities are identified first.
 
 This allows retrieval to understand:
 
@@ -1924,8 +1840,6 @@ child
 scope
 source location
 ```
-
----
 
 ## 4. Graph + Vector + Full Text
 
@@ -1981,118 +1895,6 @@ The project combines all four.
 
 ---
 
-# Important Implementation Details
-
-## Query Sanitization
-
-Full-text queries are sanitized before being sent to the Lucene-backed full-text index.
-
-This prevents query syntax characters from unintentionally changing the search expression.
-
----
-
-## Test-File Filtering
-
-The retrieval layer contains logic for identifying common test/specification files.
-
-Examples include patterns such as:
-
-```text
-test_
-_test
-.spec.
-.test.
-_mock
-_fixture
-tests.rs
-```
-
-This helps prevent test artifacts from dominating retrieval when the user is asking about the main implementation.
-
----
-
-## AST Node Resolution
-
-Graph resolution works from normalized AST node identities.
-
-Nodes can be resolved using:
-
-```text
-name
-qualified ID
-file path
-symbol
-```
-
-This is especially important for overloaded or nested symbols.
-
----
-
-## Source Location Preservation
-
-Source locations are retained through the parsing and chunking pipeline.
-
-This provides:
-
-```text
-start_line
-end_line
-start_column
-end_column
-```
-
-which can later support:
-
-```text
-line-specific Git operations
-citations
-blame
-context verification
-```
-
----
-
-# Unified Pipeline
-
-The runtime implementation ultimately exposes a unified pipeline conceptually equivalent to:
-
-```python
-run_unified_pipeline(
-    query,
-    repository_name,
-    ollama_client,
-    engine
-)
-```
-
-The pipeline performs:
-
-```text
-Stage 0
-    ↓
-Route selection
-    ↓
-Stage 1
-    ↓
-Route-specific retrieval
-    ↓
-Stage 2
-    ↓
-Reranking + compression
-    ↓
-Stage 3
-    ↓
-Grounded generation
-    ↓
-Validation
-    ↓
-Final answer
-```
-
-The route is selected once and then preserved through the subsequent stages.
-
----
-
 # Technology Stack
 
 The project combines:
@@ -2101,10 +1903,10 @@ The project combines:
 | --------------------- | ---------------------------------- |
 | Repository source     | Git / GitHub repositories          |
 | Local repository      | Git clone                          |
-| Parsing               | Tree-sitter                        |
+| Parsing               | tree-sitter                        |
 | Parser implementation | Python                             |
-| Graph database        | Neo4j                              |
-| Graph query language  | Cypher                             |
+| Graph database        | Neo4j aura                              |
+| Graph query language  | Cypher Query Language                          |
 | Embeddings            | `qwen3-embedding:0.6b`             |
 | Local LLM runtime     | Ollama                             |
 | Generation model      | `qwen2.5-coder:7b-instruct-q4_K_M` |
@@ -2112,7 +1914,7 @@ The project combines:
 | Lexical retrieval     | Neo4j full-text search             |
 | Graph retrieval       | Cypher                             |
 | Git retrieval         | Local Git commands                 |
-| Reranking             | Stage 2 reranking pipeline         |
+| Reranking             | BAAI/bge-reranker-v2-m3         |
 | Context compression   | Stage 2 contextual compression     |
 | Final generation      | Qwen via Ollama                    |
 
@@ -2169,110 +1971,9 @@ Multi-route-GitHub-Navigator/
 └── README.md
 ```
 
-The exact physical organization can differ from this conceptual layout; the important architectural separation is:
-
-```text
-Parser
-   ↓
-Ingestion
-   ↓
-Knowledge Graph
-   ↓
-Retrieval
-   ↓
-Reranking / Compression
-   ↓
-Generation
-```
-
 ---
 
-# Architectural Summary
-
-The project can be summarized as five major layers.
-
-## Layer 1 — Repository Understanding
-
-```text
-GitHub
-  ↓
-Local Clone
-  ↓
-File Classification
-  ↓
-Tree-sitter / Text / Binary Processing
-```
-
----
-
-## Layer 2 — Structured Knowledge Construction
-
-```text
-Parsed Entities
-       ↓
-Normalization
-       ↓
-Chunks
-       ↓
-Embeddings
-       ↓
-Neo4j
-```
-
----
-
-## Layer 3 — Multi-modal Repository Retrieval
-
-```text
-                    Query
-                      │
-          ┌───────────┼───────────┐
-          ▼           ▼           ▼
-       HYBRID       GRAPH        GIT
-          │           │           │
-       Semantic    Structure    History
-       + Lexical
-```
-
----
-
-## Layer 4 — Context Intelligence
-
-```text
-Raw Retrieval
-     ↓
-Deduplication
-     ↓
-Reranking
-     ↓
-Dynamic Pruning
-     ↓
-Context Compression
-```
-
----
-
-## Layer 5 — Grounded Generation
-
-```text
-Compressed Context
-        ↓
-Context Formatting
-        ↓
-Route-specific Prompt
-        ↓
-Qwen
-        ↓
-Citation Validation
-        ↓
-Grounding Validation
-        ↓
-Final Answer
-```
-
----
-
-# Why This Architecture Is Different
+# Why this architecture is different?
 
 The system is not simply:
 
@@ -2309,19 +2010,19 @@ Instead, it is:
         │            │            │
         └────────────┼────────────┘
                      │
-                 Stage 1
+             Stage 1 Retrieval
                      │
                      ▼
              Stage 2 Reranking
                      │
                      ▼
-             Context Compression
+          Stage 2 Context Compression
                      │
                      ▼
              Stage 3 Generation
                      │
                      ▼
-             Grounding Validation
+         Stage 3 Grounding Validation
                      │
                      ▼
                 Answer
@@ -2359,7 +2060,7 @@ Potential future additions can be implemented without replacing the existing pip
 Possible extensions include:
 
 ```text
-Additional Tree-sitter languages
+Additional tree-sitter languages
 Additional repository metadata
 More graph relationships
 Import/dependency graphs
@@ -2370,134 +2071,15 @@ More retrieval strategies
 Improved reranking
 Repository-level summarization
 Multi-repository search
-Incremental repository re-indexing
 ```
 
 The existing architecture provides a foundation for these because parsing, ingestion, retrieval, reranking, and generation are separated.
 
 ---
 
-# Final Architecture
-
-The complete system can ultimately be represented as:
-
-```text
-                         ┌───────────────────┐
-                         │    GitHub Repo    │
-                         └─────────┬─────────┘
-                                   │
-                                   ▼
-                         ┌───────────────────┐
-                         │   Local Clone     │
-                         └─────────┬─────────┘
-                                   │
-                                   ▼
-                         ┌───────────────────┐
-                         │ File Classification│
-                         └─────────┬─────────┘
-                                   │
-              ┌────────────────────┼────────────────────┐
-              │                    │                    │
-              ▼                    ▼                    ▼
-        ┌───────────┐       ┌────────────┐       ┌────────────┐
-        │  TIER 1   │       │   TIER 2   │       │   TIER 3   │
-        │ Tree-sitter│       │    Text    │       │   Binary   │
-        └─────┬─────┘       └──────┬─────┘       └──────┬─────┘
-              │                    │                    │
-              └────────────────────┼────────────────────┘
-                                   ▼
-                         ┌───────────────────┐
-                         │ Content Formatting│
-                         │ + Chunking        │
-                         └─────────┬─────────┘
-                                   │
-                                   ▼
-                         ┌───────────────────┐
-                         │ Embedding Creation│
-                         └─────────┬─────────┘
-                                   │
-                                   ▼
-                         ┌───────────────────┐
-                         │      Neo4j        │
-                         │ Graph + Content   │
-                         │ + Embeddings      │
-                         └─────────┬─────────┘
-                                   │
-                    ┌──────────────┼──────────────┐
-                    │              │              │
-                    ▼              ▼              ▼
-                 VECTOR        FULL-TEXT       GRAPH
-                 SEARCH         SEARCH        TRAVERSAL
-                    │              │              │
-                    └──────────────┼──────────────┘
-                                   │
-                              HYBRID/GRAPH
-                                   │
-                                   │
-                         ┌─────────▼─────────┐
-                         │       GIT         │
-                         │ History / Blame   │
-                         │ Commits / Diffs   │
-                         └─────────┬─────────┘
-                                   │
-                                   ▼
-                         ┌───────────────────┐
-                         │      STAGE 0      │
-                         │ Domain Guardrail  │
-                         │ Intent Router     │
-                         └─────────┬─────────┘
-                                   │
-                    ┌──────────────┼──────────────┐
-                    │              │              │
-                    ▼              ▼              ▼
-                 HYBRID          GRAPH           GIT
-                    │              │              │
-                    └──────────────┼──────────────┘
-                                   ▼
-                         ┌───────────────────┐
-                         │      STAGE 1      │
-                         │ Multi-route       │
-                         │ Retrieval         │
-                         └─────────┬─────────┘
-                                   │
-                                   ▼
-                         ┌───────────────────┐
-                         │      STAGE 2      │
-                         │ Deduplication     │
-                         │ Reranking         │
-                         │ Dynamic Pruning   │
-                         │ Compression       │
-                         └─────────┬─────────┘
-                                   │
-                                   ▼
-                         ┌───────────────────┐
-                         │ Context Formatting│
-                         └─────────┬─────────┘
-                                   │
-                                   ▼
-                         ┌───────────────────┐
-                         │      STAGE 3      │
-                         │ Grounded Qwen     │
-                         │ Generation        │
-                         └─────────┬─────────┘
-                                   │
-                                   ▼
-                         ┌───────────────────┐
-                         │ Citation Check    │
-                         │ Grounding Check   │
-                         └─────────┬─────────┘
-                                   │
-                                   ▼
-                         ┌───────────────────┐
-                         │   FINAL ANSWER    │
-                         └───────────────────┘
-```
-
----
-
 # Conclusion
 
-The **Multi-route GitHub Navigator** is a repository-specific RAG architecture that combines program analysis, graph databases, semantic retrieval, lexical retrieval, and Git history analysis.
+The **Multi-route-RAG-based-GitHub-Navigator** is a repository-specific RAG architecture that combines program analysis, graph databases, semantic retrieval, lexical retrieval, and Git history analysis.
 
 Its central design is the separation of responsibilities:
 
@@ -2521,7 +2103,7 @@ GIT
     → understand historical changes and provenance
 
 Stage 2
-    → select and compress useful evidence
+    → select, rerank and compress useful evidence
 
 Stage 3
     → generate a grounded answer
@@ -2530,12 +2112,5 @@ Validation
     → prevent unsupported answers
 ```
 
-The complete architecture therefore moves from:
-
-> **raw repository → structured repository knowledge → route-specific retrieval → compressed evidence → grounded answer**
-
-rather than directly moving from:
-
-> **query → similarity search → LLM**
 
 That distinction is the foundation of the project.
