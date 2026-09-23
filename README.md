@@ -1014,7 +1014,7 @@ Neo4j is then queried through Cypher for:
 1. Vector similarity
 2. Full-text matches
 
-The results are merged and scored.
+The results are merged and scored using **Reciprocal Rank Fusion (RRF)**.
 
 The current route effectively uses:
 
