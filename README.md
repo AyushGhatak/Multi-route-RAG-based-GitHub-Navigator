@@ -1924,7 +1924,7 @@ Neo4j vector indexes are designed specifically to retrieve nodes or relationship
 
 # Project Structure
 
-A conceptual project structure is:
+The project structure is:
 
 ```text
 Multi-route-GitHub-Navigator/
