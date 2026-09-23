@@ -86,7 +86,7 @@ These routes are preceded by a lightweight domain guardrail and embedding-based 
 
 The complete system can be divided into two major phases.
 
-## Offline Repository Preparation
+## Offline Graph-based Vector dB (neo4j Aura) Creation
 
 ```text
 GitHub Repository
@@ -1929,45 +1929,16 @@ A conceptual project structure is:
 ```text
 Multi-route-GitHub-Navigator/
 │
-├── codeparser/
-│   ├── base_handler.py
-│   ├── python_handler.py
-│   ├── javascript_handler.py
-│   ├── typescript_handler.py
-│   ├── java_handler.py
-│   ├── go_handler.py
-│   ├── cpp_handler.py
-│   ├── c_handler.py
-│   ├── csharp_handler.py
-│   ├── rust_handler.py
-│   ├── ruby_handler.py
-│   ├── css_handler.py
-│   ├── html_handler.py
-│   ├── json_handler.py
-│   ├── markdown_handler.py
-│   ├── sql_handler.py
-│   └── orchestrator.py
-│
-├── ingestion/
-│   ├── repository_clone.py
-│   ├── file_classifier.py
-│   ├── parser_pipeline.py
-│   ├── chunking.py
-│   ├── formatter.py
-│   ├── embedding.py
-│   └── neo4j_ingestion.py
-│
-├── retrieval/
-│   ├── hybrid_route.py
-│   ├── graph_route.py
-│   └── git_route.py
-│
-├── pipeline/
+├── Offline Indexing/
+│   ├── codeparser.py
+│   ├── cloning_git_repo_locally_and_repo_file_parser
+│   ├── code_and_git_ingestion_to_neo4j
+|   ├── README.md
+├── Online Query Processing/
 │   ├── stage0.py
-│   ├── stage1.py
-│   ├── stage2.py
-│   └── stage3.py
-│
+│   ├── stage1_2_3.py
+│   ├── README.md
+├── main.py
 └── README.md
 ```
 
